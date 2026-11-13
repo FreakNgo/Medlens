@@ -24,9 +24,10 @@ tailwind.config = { theme: { extend: {
   :focus-visible { outline: 3px solid #2A5BFF; outline-offset: 2px; }
   #composerWrap { padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
   textarea::placeholder { color: #8A94AB; }
+  textarea { scrollbar-width: none; } textarea::-webkit-scrollbar { display: none; }
 
   /* readable answer typography */
-  .md { font-size: 16.5px; line-height: 1.7; color: #1B2A4A; overflow-wrap: anywhere; }
+  .md { font-size: 16.5px; line-height: 1.62; color: #1B2A4A; overflow-wrap: anywhere; }
   .md > :first-child { margin-top: 0; }
   .md h2 { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-size: 1.4rem; line-height: 1.2; margin: 1.7em 0 .4em; padding-top: 1.1em; border-top: 2px dashed #D5DBEA; color: #0A1B3D; }
   .md > h2:first-child { padding-top: 0; border: 0; margin-top: 0; }
@@ -58,13 +59,13 @@ tailwind.config = { theme: { extend: {
   <header class="flex items-center justify-between px-4 py-3 bg-white/90 backdrop-blur border-b border-slate-200 z-10">
     <div class="flex items-center gap-2.5">
       <svg viewBox="0 0 32 32" class="w-9 h-9 -rotate-45" aria-hidden="true"><defs><clipPath id="cap"><rect x="2" y="10" width="28" height="12" rx="6"/></clipPath></defs><g clip-path="url(#cap)"><rect x="2" y="10" width="14" height="12" fill="#2A5BFF"/><rect x="16" y="10" width="14" height="12" fill="#0A1B3D"/></g></svg>
-      <span class="font-display font-extrabold text-2xl tracking-tight">MedLens</span>
+      <span class="font-display font-extrabold text-[22px] tracking-tight max-[389px]:hidden">MedLens</span>
     </div>
     <div class="flex items-center gap-1.5">
-      <button id="signPill" class="hidden h-10 rounded-full bg-ink text-white font-semibold px-4 text-sm mr-1">Sign in</button>
-      <button id="newBtn" class="w-10 h-10 rounded-full hover:bg-sky flex items-center justify-center" aria-label="New chat"><i data-lucide="square-pen" class="w-5 h-5"></i></button>
-      <button id="histBtn" class="w-10 h-10 rounded-full hover:bg-sky flex items-center justify-center" aria-label="Past chats"><i data-lucide="clock" class="w-5 h-5"></i></button>
-      <button id="setBtn" class="w-10 h-10 rounded-full hover:bg-sky flex items-center justify-center" aria-label="Settings"><i data-lucide="settings" class="w-5 h-5"></i></button>
+      <button id="signPill" class="hidden h-9 shrink-0 whitespace-nowrap rounded-full bg-ink text-white font-semibold px-3.5 text-sm mr-1">Sign in</button>
+      <button id="newBtn" class="w-9 h-9 rounded-full hover:bg-sky flex items-center justify-center" aria-label="New chat"><i data-lucide="square-pen" class="w-5 h-5"></i></button>
+      <button id="histBtn" class="w-9 h-9 rounded-full hover:bg-sky flex items-center justify-center" aria-label="Past chats"><i data-lucide="clock" class="w-5 h-5"></i></button>
+      <button id="setBtn" class="w-9 h-9 rounded-full hover:bg-sky flex items-center justify-center" aria-label="Settings"><i data-lucide="settings" class="w-5 h-5"></i></button>
     </div>
   </header>
 
@@ -84,6 +85,7 @@ tailwind.config = { theme: { extend: {
       </div>
     </section>
     <div id="msgs" class="space-y-5"></div>
+    <div id="spacer" aria-hidden="true"></div>
   </main>
 
   <!-- composer -->
@@ -97,10 +99,10 @@ tailwind.config = { theme: { extend: {
     <div class="flex items-end gap-2">
       <input id="file" type="file" accept="image/*" class="sr-only">
       <label for="file" class="w-11 h-11 shrink-0 rounded-full bg-sky text-cobalt hover:bg-blue-100 flex items-center justify-center cursor-pointer" aria-label="Add photo"><i data-lucide="camera" class="w-5 h-5"></i></label>
-      <textarea id="input" rows="1" class="flex-1 rounded-3xl bg-paper border border-slate-200 focus:border-cobalt focus:outline-none px-4 py-2.5 text-[16.5px] resize-none max-h-[150px]" placeholder="Type medicine names or ask a question"></textarea>
+      <textarea id="input" rows="1" class="flex-1 rounded-3xl bg-paper border border-slate-200 focus:border-cobalt focus:outline-none px-4 py-2.5 text-[16.5px] resize-none max-h-[150px]" placeholder="Ask about a medicine…"></textarea>
       <button id="sendBtn" class="w-11 h-11 shrink-0 rounded-full bg-cobalt text-white hover:bg-blue-700 flex items-center justify-center" aria-label="Send"><i data-lucide="arrow-up" class="w-5 h-5"></i></button>
     </div>
-    <p class="text-center text-[11px] text-slate-400 mt-1.5">AI can make mistakes. Check with your doctor or pharmacist before acting.</p>
+    <p class="text-center text-[11px] text-slate-400 mt-1.5">AI can make mistakes. Check with your doctor or pharmacist.</p>
   </div>
 
   <!-- past chats sheet -->
@@ -200,7 +202,7 @@ const extractText = r => { if (typeof r === 'string') return r; const c = r?.mes
 const typing = '<div class="flex gap-1 py-2"><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i></div>';
 const CHIPS = ['What are the side effects?', 'Can I take these with food?', 'Explain it more simply', 'Which medicines shouldn’t I mix?'];
 function userEl(m) {
-  return `<div class="flex justify-end"><div class="max-w-[85%] rounded-3xl rounded-br-lg bg-cobalt text-white px-4 py-3 text-[16.5px] leading-snug">${m.img ? `<img src="${m.img}" alt="Attached photo" class="rounded-2xl mb-2 max-h-48 object-cover">` : ''}<span class="whitespace-pre-wrap">${esc(m.content)}</span></div></div>`;
+  return `<div class="u-msg flex justify-end"><div class="max-w-[85%] rounded-3xl rounded-br-lg bg-cobalt text-white px-4 py-3 text-[16.5px] leading-snug">${m.img ? `<img src="${m.img}" alt="Attached photo" class="rounded-2xl mb-2 max-h-48 object-cover">` : ''}<span class="whitespace-pre-wrap">${esc(m.content)}</span></div></div>`;
 }
 function botEl(m, i, last) {
   const live = busy && last;
@@ -212,13 +214,25 @@ function botEl(m, i, last) {
       ${!busy && last && m.content ? `<div class="mt-2 flex flex-wrap gap-2">${CHIPS.map(q => `<button data-q="${esc(q)}" class="rounded-full bg-white border border-slate-200 hover:border-cobalt px-3.5 py-2 text-sm font-semibold text-cobalt">${esc(q)}</button>`).join('')}</div>` : ''}
     </div></div>`;
 }
-function renderMsgs(force = true) {
-  $('welcome').classList.toggle('hidden', cur.messages.length > 0);
-  const n = cur.messages.length;
-  $('msgs').innerHTML = cur.messages.map((m, i) => m.role === 'user' ? userEl(m) : botEl(m, i, i === n - 1)).join('');
-  icons(); scrollDown(force);
+function fitSpacer() {
+  const s = $('scroller'), sp = $('spacer'), us = $('msgs').querySelectorAll('.u-msg');
+  if (!us.length) { sp.style.height = '0px'; return; }
+  const turn = $('msgs').getBoundingClientRect().bottom - us[us.length - 1].getBoundingClientRect().top;
+  sp.style.height = Math.max(16, s.clientHeight - turn - 20) + 'px';
 }
-function scrollDown(force) { const s = $('scroller'); if (force || s.scrollHeight - s.scrollTop - s.clientHeight < 140) s.scrollTop = s.scrollHeight; }
+function scrollToLastUser(smooth) {
+  const s = $('scroller'), us = $('msgs').querySelectorAll('.u-msg'); if (!us.length) return;
+  const top = s.scrollTop + us[us.length - 1].getBoundingClientRect().top - s.getBoundingClientRect().top - 12;
+  s.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+}
+/* mode: 'keep' (stay put), 'user' / 'userNow' (put the latest question at the top), 'top' */
+function renderMsgs(mode = 'keep') {
+  const s = $('scroller'), t = s.scrollTop, n = cur.messages.length;
+  $('welcome').classList.toggle('hidden', n > 0);
+  $('msgs').innerHTML = cur.messages.map((m, i) => m.role === 'user' ? userEl(m) : botEl(m, i, i === n - 1)).join('');
+  icons(); fitSpacer();
+  if (mode === 'user') scrollToLastUser(true); else if (mode === 'userNow') scrollToLastUser(false); else if (mode === 'top') s.scrollTop = 0; else s.scrollTop = t;
+}
 function setBusy(b) { busy = b; $('sendBtn').innerHTML = `<i data-lucide="${b ? 'square' : 'arrow-up'}" class="w-5 h-5"></i>`; $('sendBtn').setAttribute('aria-label', b ? 'Stop' : 'Send'); icons(); }
 function notice(msg) { const n = $('notice'); if (!msg) { n.classList.add('hidden'); return; } n.innerHTML = `<i data-lucide="circle-alert" class="w-4 h-4 shrink-0 mt-0.5"></i><span>${esc(msg)}</span>`; n.classList.remove('hidden'); n.classList.add('flex'); icons(); }
 
@@ -231,7 +245,7 @@ function setFile(f) {
   $('preview').classList.toggle('hidden', !file); $('preview').classList.toggle('flex', !!file);
   if (file) { $('previewImg').src = URL.createObjectURL(file); $('fileName').textContent = file.name; }
 }
-const autosize = () => { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 150) + 'px'; };
+const autosize = () => { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 150) + 'px'; fitSpacer(); };
 $('input').addEventListener('input', autosize);
 $('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
 $('sendBtn').addEventListener('click', () => busy ? (stopFlag = true) : send());
@@ -246,9 +260,9 @@ async function send(q) {
   const f = file, img = f ? $('previewImg').src : null;
   cur.messages.push({ role: 'user', content: text || 'Please explain the medicines in this image.', img });
   const bot = { role: 'assistant', content: '' }; cur.messages.push(bot);
-  setFile(null); $('input').value = ''; autosize(); stopFlag = false; setBusy(true); renderMsgs();
+  setFile(null); $('input').value = ''; autosize(); stopFlag = false; setBusy(true); renderMsgs('user');
   const prior = cur.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
-  let raf = 0; const paint = () => { raf = 0; const el = $('live'); if (el) { el.innerHTML = md(bot.content) + '<span class="cursor"></span>'; scrollDown(false); } };
+  let raf = 0; const paint = () => { raf = 0; const el = $('live'); if (el) { el.innerHTML = md(bot.content) + '<span class="cursor"></span>'; fitSpacer(); } };
   try {
     const opts = { model: MODEL, stream: true }; let res;
     if (f) {
@@ -275,7 +289,7 @@ $('msgs').addEventListener('click', e => {
   const q = e.target.closest('[data-q]'); if (q) { send(q.dataset.q); return; }
   const c = e.target.closest('[data-copy]'); if (c) { navigator.clipboard?.writeText(cur.messages[+c.dataset.copy].content); c.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>Copied'; icons(); }
 });
-function newConversation() { if (busy) return; cur = newChat(); notice(''); setFile(null); closeSheets(); renderMsgs(); }
+function newConversation() { if (busy) return; cur = newChat(); notice(''); setFile(null); closeSheets(); renderMsgs('top'); }
 $('newBtn').addEventListener('click', newConversation);
 
 /* ---------- sheets ---------- */
@@ -296,7 +310,7 @@ $('histList').addEventListener('click', e => {
   const d = e.target.closest('[data-del]');
   if (d) { chats = chats.filter(c => c.id !== +d.dataset.del); store.set('medlens_chats', chats); drawHist(); return; }
   const o = e.target.closest('[data-open]');
-  if (o && !busy) { const c = chats.find(x => x.id === +o.dataset.open); if (c) { cur = JSON.parse(JSON.stringify(c)); closeSheets(); renderMsgs(); } }
+  if (o && !busy) { const c = chats.find(x => x.id === +o.dataset.open); if (c) { cur = JSON.parse(JSON.stringify(c)); closeSheets(); renderMsgs('userNow'); } }
 });
 $('delAll').addEventListener('click', () => { if (confirm('Delete all saved chats?')) { chats = []; store.set('medlens_chats', chats); drawHist(); } });
 
@@ -325,7 +339,7 @@ $('tourBack').addEventListener('click', () => { if (step) { step--; drawTour(); 
 $('tourSkip').addEventListener('click', closeTour);
 $('tourBtn').addEventListener('click', openTour);
 
-updateAuthUI(); renderMsgs(); icons();
+updateAuthUI(); renderMsgs('top'); icons(); addEventListener('resize', fitSpacer);
 if (!store.get('medlens_seen', false)) openTour();
 </script>
 </body>
