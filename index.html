@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2A5BFF">
+<title>MedLens – Understand your medicines</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'], sans: ['Figtree', 'system-ui', 'sans-serif'] },
+  colors: { ink: '#0A1B3D', cobalt: '#2A5BFF', sky: '#EAF0FF', paper: '#F5F7FB', mint: '#12906F', coral: '#D93F4A', amber: '#B7791F' }
+}}};
+</script>
+<style>
+  /* blister-pack dot texture */
+  .blister { background-image: radial-gradient(circle, rgba(255,255,255,.16) 0 8px, transparent 9px); background-size: 26px 26px; }
+  .perf { border-top: 2px dashed #D5DBEA; }
+  a[href*="puter.com"], [class^="puter-"], [class*=" puter-"], [id^="puter-"] { display: none !important; }
+  :focus-visible { outline: 3px solid #2A5BFF; outline-offset: 2px; }
+  #nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  textarea::placeholder { color: #8A94AB; }
+  @keyframes blink { 0%,80%,100% { opacity:.25 } 40% { opacity:1 } }
+  .dot { animation: blink 1.2s infinite; } .dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  details > summary { list-style: none; cursor: pointer; } details > summary::-webkit-details-marker { display: none; }
+  details[open] .chev { transform: rotate(180deg); }
+</style>
+</head>
+<body class="font-sans text-ink bg-paper antialiased">
+<div class="max-w-lg mx-auto min-h-screen bg-paper relative">
+
+<!-- ============ SCAN ============ -->
+<div id="view-scan" class="pb-32">
+  <header class="flex items-center justify-between px-5 pt-5">
+    <div class="flex items-center gap-2.5">
+      <svg viewBox="0 0 32 32" class="w-9 h-9 -rotate-45" aria-hidden="true"><defs><clipPath id="cap"><rect x="2" y="10" width="28" height="12" rx="6"/></clipPath></defs><g clip-path="url(#cap)"><rect x="2" y="10" width="14" height="12" fill="#2A5BFF"/><rect x="16" y="10" width="14" height="12" fill="#0A1B3D"/></g></svg>
+      <span class="font-display font-extrabold text-2xl tracking-tight">MedLens</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="helpBtn" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center" aria-label="How it works"><i data-lucide="circle-help" class="w-5 h-5"></i></button>
+      <button id="pillAuth" class="h-10 rounded-full bg-ink text-white font-semibold px-4 text-sm">Sign in</button>
+    </div>
+  </header>
+
+  <section class="blister mx-5 mt-5 rounded-[28px] bg-cobalt text-white p-6 pb-16">
+    <h1 class="font-display font-extrabold text-[34px] leading-[1.05]">Know exactly what's in your pill box.</h1>
+    <p class="mt-3 text-white/80 text-[17px] leading-snug">Type a name or snap a photo. Get dose times, warnings and plain-language notes.</p>
+  </section>
+
+  <section class="relative -mt-10 mx-5 rounded-[28px] bg-white border border-slate-200 shadow-xl shadow-ink/10 p-5">
+    <label for="meds" class="font-bold">Medicine names</label>
+    <textarea id="meds" rows="2" class="mt-2 w-full rounded-2xl bg-paper border border-slate-200 p-3.5 text-[17px] focus:outline-none focus:border-cobalt resize-none" placeholder="e.g. Metformin 500mg, Dolo 650"></textarea>
+
+    <input id="file" type="file" accept="image/*" class="sr-only">
+    <label id="addPhoto" for="file" class="mt-3 cursor-pointer rounded-2xl border-2 border-dashed border-cobalt/40 bg-sky/60 hover:bg-sky py-4 flex items-center justify-center gap-2 font-semibold text-cobalt">
+      <i data-lucide="camera" class="w-5 h-5"></i>Photo of prescription or strip
+    </label>
+    <div id="preview" class="hidden mt-3 items-center gap-3 rounded-2xl bg-sky p-2">
+      <img id="previewImg" alt="Selected photo" class="w-14 h-14 rounded-xl object-cover">
+      <span id="fileName" class="text-sm font-medium truncate flex-1"></span>
+      <button id="removeFile" class="p-2 rounded-full hover:bg-white" aria-label="Remove photo"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <button id="analyzeBtn" class="mt-4 w-full rounded-2xl bg-cobalt hover:bg-blue-700 text-white font-bold text-lg py-4 flex items-center justify-center gap-2 disabled:opacity-60">
+      <i data-lucide="sparkles" class="w-5 h-5"></i>Explain my medicines
+    </button>
+  </section>
+
+  <div class="mx-5 mt-4 text-center">
+    <button id="demoBtn" class="rounded-full bg-white border border-slate-200 hover:border-cobalt px-5 py-3 font-semibold inline-flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5 text-cobalt"></i>Try a sample prescription</button>
+    <p class="mt-2 text-sm text-slate-500">Works instantly, no sign-in needed.</p>
+  </div>
+
+  <section id="status" class="hidden mx-5 mt-6"></section>
+  <section id="results" class="mx-5 mt-6 space-y-4"></section>
+</div>
+
+<!-- ============ HISTORY ============ -->
+<div id="view-history" class="hidden px-5 pt-8 pb-32">
+  <div class="flex items-end justify-between gap-3">
+    <div><h1 class="font-display font-extrabold text-4xl">History</h1><p id="histCount" class="text-slate-500 mt-1"></p></div>
+    <button id="delAll" class="rounded-full bg-white border border-slate-200 text-coral font-semibold px-4 py-2.5 text-sm">Delete all</button>
+  </div>
+  <div id="chips" class="mt-5 flex gap-2 overflow-x-auto pb-1"></div>
+  <div id="histList" class="mt-4 space-y-2"></div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div id="view-settings" class="hidden px-5 pt-8 pb-32">
+  <h1 class="font-display font-extrabold text-4xl">Settings</h1>
+  <div class="mt-6 rounded-3xl bg-white border border-slate-200 divide-y divide-slate-100">
+    <div class="p-4 flex items-center gap-3">
+      <span class="w-11 h-11 rounded-xl bg-sky text-cobalt flex items-center justify-center"><i data-lucide="user-round" class="w-5 h-5"></i></span>
+      <div class="flex-1"><p class="font-bold">Account</p><p id="authState" class="text-sm text-slate-500"></p></div>
+      <button id="authBtn" class="rounded-full bg-ink text-white font-semibold px-4 py-2 text-sm"></button>
+    </div>
+    <div class="p-4">
+      <label for="lang" class="font-bold flex items-center gap-3"><span class="w-11 h-11 rounded-xl bg-sky text-cobalt flex items-center justify-center"><i data-lucide="languages" class="w-5 h-5"></i></span>Explain in</label>
+      <select id="lang" class="mt-3 w-full rounded-xl border border-slate-200 bg-paper p-3 font-medium"><option>English</option><option>Hindi</option><option>Tamil</option><option>Telugu</option><option>Bengali</option><option>Marathi</option><option>Spanish</option><option>French</option></select>
+    </div>
+    <button id="tourBtn" class="p-4 w-full flex items-center gap-3 text-left">
+      <span class="w-11 h-11 rounded-xl bg-sky text-cobalt flex items-center justify-center"><i data-lucide="circle-help" class="w-5 h-5"></i></span>
+      <span class="flex-1"><b class="block">How it works</b><span class="text-sm text-slate-500">Replay the quick tutorial</span></span><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i>
+    </button>
+    <div class="p-4 flex items-center gap-3">
+      <span class="w-11 h-11 rounded-xl bg-emerald-50 text-mint flex items-center justify-center"><i data-lucide="lock" class="w-5 h-5"></i></span>
+      <div><p class="font-bold">Stays on your device</p><p class="text-sm text-slate-500">History is saved only here. Photos are never stored.</p></div>
+    </div>
+  </div>
+  <p class="mt-5 text-sm text-slate-500 flex gap-2"><i data-lucide="shield-alert" class="w-4 h-4 shrink-0 mt-0.5"></i><span>MedLens is an AI explainer for education only. It can misread handwriting or labels and is not a substitute for your doctor or pharmacist. Never change or stop a medicine because of what you read here.</span></p>
+</div>
+
+<!-- ============ NAV ============ -->
+<nav id="nav" class="fixed bottom-0 inset-x-0 max-w-lg mx-auto bg-white/90 backdrop-blur border-t border-slate-200 z-20">
+  <div class="grid grid-cols-3">
+    <button data-tab="scan" class="tab pb-2 flex flex-col items-center text-slate-400"><span class="bar h-1 w-10 rounded-b-full mb-2"></span><i data-lucide="scan-search" class="w-6 h-6"></i><span class="text-xs font-semibold mt-1">Scan</span></button>
+    <button data-tab="history" class="tab pb-2 flex flex-col items-center text-slate-400"><span class="bar h-1 w-10 rounded-b-full mb-2"></span><i data-lucide="clock" class="w-6 h-6"></i><span class="text-xs font-semibold mt-1">History</span></button>
+    <button data-tab="settings" class="tab pb-2 flex flex-col items-center text-slate-400"><span class="bar h-1 w-10 rounded-b-full mb-2"></span><i data-lucide="sliders-horizontal" class="w-6 h-6"></i><span class="text-xs font-semibold mt-1">Settings</span></button>
+  </div>
+</nav>
+
+<!-- ============ TUTORIAL ============ -->
+<div id="tour" class="hidden fixed inset-0 z-50 bg-white" role="dialog" aria-modal="true" aria-label="How MedLens works">
+  <div class="max-w-lg mx-auto h-full flex flex-col px-6 py-5">
+    <div class="flex items-center justify-between">
+      <button id="tourBack" class="text-slate-500 font-semibold py-2 pr-4">Back</button>
+      <button id="tourSkip" class="text-slate-500 font-semibold py-2 pl-4">Skip</button>
+    </div>
+    <div id="tourArt" class="blister mt-2 flex-1 max-h-[46vh] rounded-[32px] bg-cobalt flex items-center justify-center"></div>
+    <div class="mt-7 min-h-[132px]">
+      <h2 id="tourTitle" class="font-display font-extrabold text-3xl leading-tight"></h2>
+      <p id="tourText" class="mt-2 text-lg text-slate-600 leading-snug"></p>
+    </div>
+    <div id="tourDots" class="flex gap-2 items-center justify-center my-4"></div>
+    <button id="tourNext" class="w-full rounded-2xl bg-cobalt text-white font-bold text-lg py-4"></button>
+  </div>
+</div>
+</div>
+
+<script>
+const MODEL = "google/gemini-3.7-flash";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const icons = () => window.lucide && lucide.createIcons();
+let file = null, filter = 'all';
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let history = store.get('medlens_history', []);
+const saveHistory = () => store.set('medlens_history', history.slice(0, 50));
+
+/* ---------- demo data (works without sign-in) ---------- */
+const DEMO_RX = `Dr. A. Sharma, MBBS · City Care Clinic\nPatient: Riya, 34 F      Date: 12/11/2026\nDx: Acute throat infection\n\nRx\n1. Cap Amoxicillin 500 mg  1-1-1 x 7 days\n2. Tab Paracetamol 650 mg  SOS (fever)\n3. Tab Pantoprazole 40 mg  1-0-0 before food x 5 days`;
+const DEMO = {
+  summary: "This prescription treats a bacterial throat infection: an antibiotic to clear it, a fever reducer for symptoms, and an acid reducer to protect your stomach.",
+  medicines: [
+    { name: "Amoxicillin 500 mg capsule", generic: "Amoxicillin (penicillin-type antibiotic)", purpose: "Kills the bacteria causing the throat infection.", times: ["morning","afternoon","night"], duration: "7 days", how_to_take: "1 capsule three times a day. Finish the whole course even if you feel better.", side_effects: ["Loose stools or mild nausea", "Mild rash"], warnings: ["Tell your doctor if you are allergic to penicillin.", "Get urgent help for swelling of the face or trouble breathing."], food_notes: "A meal can ease nausea." },
+    { name: "Paracetamol 650 mg tablet", generic: "Paracetamol (acetaminophen)", purpose: "Lowers fever and eases throat pain.", times: ["as_needed"], duration: "", how_to_take: "1 tablet only when you have a fever. Leave at least 6 hours between doses.", side_effects: ["Rarely causes side effects at normal doses"], warnings: ["Do not combine with other products containing paracetamol.", "Avoid alcohol; too much can harm the liver."], food_notes: "" },
+    { name: "Pantoprazole 40 mg tablet", generic: "Pantoprazole (acid reducer)", purpose: "Reduces stomach acid to protect your stomach.", times: ["morning"], duration: "5 days", how_to_take: "1 tablet, 30 to 60 minutes before breakfast. Swallow whole.", side_effects: ["Headache", "Gas or mild stomach upset"], warnings: ["Do not crush or chew the tablet."], food_notes: "Best on an empty stomach." }
+  ],
+  interactions: ["No major interactions between these three medicines. Tell your pharmacist about any other medicines or supplements you take."],
+  questions_for_doctor: ["How many days should I wait before calling you if the fever continues?", "Should I avoid any foods or drinks during this course?"],
+  unreadable: ""
+};
+
+/* ---------- navigation ---------- */
+function setTab(t) {
+  ['scan', 'history', 'settings'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== t));
+  document.querySelectorAll('.tab').forEach(b => {
+    const on = b.dataset.tab === t;
+    b.classList.toggle('text-cobalt', on); b.classList.toggle('text-slate-400', !on);
+    b.querySelector('.bar').classList.toggle('bg-cobalt', on);
+  });
+  if (t === 'history') renderHistory();
+  if (t === 'settings') updateAuthUI();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+/* ---------- auth: sign-in only on click ---------- */
+const isSignedIn = () => { try { return !!(window.puter && puter.auth.isSignedIn()); } catch { return false; } };
+function updateAuthUI() {
+  const s = isSignedIn();
+  $('pillAuth').textContent = s ? 'Signed in' : 'Sign in';
+  $('authState').textContent = s ? 'Signed in on this device' : 'Not signed in';
+  $('authBtn').textContent = s ? 'Sign out' : 'Sign in';
+}
+async function ensureAuth() {
+  if (isSignedIn()) return true;
+  try { await puter.auth.signIn({ attempt_temp_user_creation: true }); } catch { return false; }
+  updateAuthUI(); return isSignedIn();
+}
+$('authBtn').addEventListener('click', async () => { if (isSignedIn()) { try { await puter.auth.signOut(); } catch {} updateAuthUI(); } else await ensureAuth(); });
+$('pillAuth').addEventListener('click', async () => { if (isSignedIn()) setTab('settings'); else await ensureAuth(); });
+
+$('lang').value = store.get('medlens_lang', 'English');
+$('lang').addEventListener('change', e => store.set('medlens_lang', e.target.value));
+
+/* ---------- photo ---------- */
+$('file').addEventListener('change', e => setFile(e.target.files[0]));
+$('removeFile').addEventListener('click', () => setFile(null));
+function setFile(f) {
+  file = f || null; $('file').value = '';
+  $('preview').classList.toggle('hidden', !file); $('preview').classList.toggle('flex', !!file);
+  $('addPhoto').classList.toggle('hidden', !!file);
+  if (file) { $('previewImg').src = URL.createObjectURL(file); $('fileName').textContent = file.name; }
+}
+
+/* ---------- results ---------- */
+const SLOTS = [['morning', 'sunrise', 'Morning'], ['afternoon', 'sun', 'Afternoon'], ['night', 'moon', 'Night']];
+const cells = ts => SLOTS.map(([k, ic, l]) => { const on = ts.includes(k);
+  return `<div class="flex flex-col items-center gap-1.5"><span class="w-12 h-12 rounded-full flex items-center justify-center ${on ? 'bg-cobalt text-white shadow-md shadow-cobalt/30' : 'border-2 border-dashed border-slate-300 text-slate-300'}"><i data-lucide="${ic}" class="w-5 h-5"></i></span><span class="text-xs font-semibold ${on ? 'text-ink' : 'text-slate-400'}">${l}</span></div>`; }).join('');
+const bullets = (arr, c) => (arr || []).map(x => `<li class="flex gap-2.5"><span class="${c} mt-2 w-1.5 h-1.5 rounded-full shrink-0"></span><span>${esc(x)}</span></li>`).join('');
+
+function render(d, o = {}) {
+  const n = (d.medicines || []).length;
+  const meds = (d.medicines || []).map((m, i) => {
+    const ts = (m.times || []).map(t => t === 'evening' ? 'night' : t);
+    const sched = ts.includes('as_needed') ? `<div class="mt-4 rounded-2xl bg-sky text-cobalt font-semibold px-4 py-3 flex items-center gap-2"><i data-lucide="alarm-clock-off" class="w-5 h-5"></i>Only when needed</div>`
+      : ts.length ? `<div class="mt-4 flex justify-around">${cells(ts)}</div>` : '';
+    return `<article class="rounded-3xl bg-white border border-slate-200 overflow-hidden shadow-sm">
+      <div class="bg-ink text-white px-5 py-2.5 flex items-center justify-between text-sm font-semibold"><span>Medicine ${i + 1} of ${n}</span>${m.duration ? `<span class="rounded-full bg-white/15 px-3 py-0.5">${esc(m.duration)}</span>` : ''}</div>
+      <div class="p-5">
+        <h3 class="font-display font-extrabold text-2xl leading-tight">${esc(m.name)}</h3>
+        ${m.generic ? `<p class="text-slate-500">${esc(m.generic)}</p>` : ''}
+        <p class="mt-3 text-[17px]">${esc(m.purpose)}</p>
+        ${sched}
+        <p class="mt-4 text-[15px]"><b>How to take: </b>${esc(m.how_to_take)}${m.food_notes ? ' ' + esc(m.food_notes) : ''}</p>
+      </div>
+      ${(m.side_effects || []).length || (m.warnings || []).length ? `<div class="perf"></div><div class="p-5 space-y-3">
+        ${(m.warnings || []).length ? `<div class="rounded-2xl bg-red-50 p-4"><p class="font-bold text-coral flex items-center gap-2"><i data-lucide="triangle-alert" class="w-5 h-5"></i>Be careful</p><ul class="mt-2 space-y-1.5 text-[15px]">${bullets(m.warnings, 'bg-coral')}</ul></div>` : ''}
+        ${(m.side_effects || []).length ? `<details class="rounded-2xl bg-paper p-4"><summary class="flex items-center justify-between font-bold">Common side effects<i data-lucide="chevron-down" class="chev w-5 h-5"></i></summary><ul class="mt-3 space-y-1.5 text-[15px]">${bullets(m.side_effects, 'bg-amber')}</ul></details>` : ''}
+      </div>` : ''}
+    </article>`; }).join('');
+  const block = (ic, title, arr) => (arr || []).length ? `<div class="rounded-3xl bg-white border border-slate-200 p-5"><h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="${ic}" class="w-5 h-5 text-cobalt"></i>${title}</h3><ul class="mt-3 space-y-1.5">${bullets(arr, 'bg-cobalt')}</ul></div>` : '';
+  $('results').innerHTML = `
+    ${o.demo ? `<div class="rounded-full bg-amber/15 text-amber font-semibold text-sm px-4 py-2 inline-flex items-center gap-2"><i data-lucide="flask-conical" class="w-4 h-4"></i>Demo · sample data, no sign-in used</div>
+      <div class="rounded-3xl bg-white border border-slate-200 p-4"><p class="font-bold flex items-center gap-2 mb-2"><i data-lucide="file-text" class="w-4 h-4 text-cobalt"></i>Sample prescription</p><pre class="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-600">${esc(DEMO_RX)}</pre></div>` : ''}
+    ${o.fromHistory ? `<div class="rounded-full bg-sky text-cobalt font-semibold text-sm px-4 py-2 inline-flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i>From your history</div>` : ''}
+    ${d.unreadable ? `<div class="rounded-3xl bg-amber/10 border border-amber/30 p-4 flex gap-3"><i data-lucide="eye-off" class="w-5 h-5 shrink-0 mt-0.5 text-amber"></i><p><b>Hard to read: </b>${esc(d.unreadable)}</p></div>` : ''}
+    <div class="rounded-3xl bg-cobalt text-white p-5"><p class="font-semibold text-white/70 text-sm">In short</p><p class="mt-1 text-xl leading-snug font-medium">${esc(d.summary)}</p></div>
+    ${meds}${block('git-compare-arrows', 'Mixing these medicines', d.interactions)}${block('message-circle-question', 'Ask your doctor or pharmacist', d.questions_for_doctor)}`;
+  icons();
+  $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function showLoading(msgs) {
+  const st = $('status'); st.classList.remove('hidden'); let i = 0;
+  const draw = () => st.innerHTML = `<div class="rounded-3xl bg-white border border-slate-200 p-5 flex items-center gap-3" role="status"><span class="flex gap-1"><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i><i class="dot w-2.5 h-2.5 rounded-full bg-cobalt"></i></span><span class="font-semibold">${esc(msgs[i % msgs.length])}</span></div>`;
+  draw(); const t = setInterval(() => { i++; draw(); }, 1400);
+  return () => { clearInterval(t); st.classList.add('hidden'); st.innerHTML = ''; };
+}
+function showError(msg) {
+  $('results').innerHTML = `<div class="rounded-3xl bg-red-50 border border-coral/30 p-4 flex gap-3 text-coral" role="alert"><i data-lucide="circle-alert" class="w-5 h-5 shrink-0 mt-0.5"></i><p>${esc(msg)}</p></div>`;
+  icons();
+}
+function addHistory(type, input, data) {
+  if (type === 'sample') history = history.filter(h => h.type !== 'sample');
+  history.unshift({ id: Date.now(), ts: Date.now(), type, input, data }); saveHistory();
+}
+
+/* ---------- demo ---------- */
+$('demoBtn').addEventListener('click', () => {
+  setTab('scan'); $('results').innerHTML = '';
+  const stop = showLoading(['Reading the prescription…', 'Looking up each medicine…']);
+  setTimeout(() => { stop(); addHistory('sample', 'Sample prescription', DEMO); render(DEMO, { demo: true }); }, 1100);
+});
+
+/* ---------- real analysis ---------- */
+const PROMPT = (text, lang) => `You are MedLens, a careful medicine explainer for everyday patients. Explain in plain, friendly language at a 6th-grade reading level. Write all explanation text in ${lang}.
+${text ? `The user typed these medicines: ${text}\n` : ''}${file ? 'An image of a prescription or medicine strip/box is attached. Read every medicine you can see.\n' : ''}
+Respond with ONLY valid JSON (no markdown, no code fences) in exactly this shape (keep keys and the "times" values in English):
+{"summary":"1-2 sentence overview","medicines":[{"name":"name and strength","generic":"generic name and drug class","purpose":"what it is for","times":["morning","afternoon","night"],"duration":"e.g. 7 days, or empty string if unknown","how_to_take":"dose and instructions as written, or typical guidance if not stated","side_effects":["..."],"warnings":["..."],"food_notes":"food/alcohol notes"}],"interactions":["notable interactions between the listed medicines, or a note that none are major"],"questions_for_doctor":["2-3 helpful questions"],"unreadable":"anything you could not read or are unsure about, else empty string"}
+"times" lists only the parts of the day the medicine is taken, using morning, afternoon, night, or ["as_needed"] for when-needed medicines, or [] if not stated.
+Rules: never diagnose, never recommend changing a dose, never invent medicines you cannot see or that were not typed, and say so in "unreadable" when handwriting is unclear. If the input contains no medicines, return an empty medicines array and explain in "summary".`;
+const extractText = r => { if (typeof r === 'string') return r; const c = r?.message?.content ?? r?.text ?? ''; return Array.isArray(c) ? c.map(p => p.text || '').join('') : String(c); };
+const parseJSON = t => { const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a < 0 || b < 0) throw 0; return JSON.parse(t.slice(a, b + 1)); };
+
+$('analyzeBtn').addEventListener('click', async () => {
+  const text = $('meds').value.trim();
+  if (!text && !file) { showError('Add a medicine name or a photo first, or try the sample prescription.'); return; }
+  if (!(await ensureAuth())) { showError('Sign in is needed to analyze your own medicines. You can still try the sample prescription without signing in.'); return; }
+  $('results').innerHTML = ''; $('analyzeBtn').disabled = true;
+  const stop = showLoading(file ? ['Reading your photo…', 'Identifying each medicine…', 'Writing plain-language notes…'] : ['Looking up each medicine…', 'Writing plain-language notes…']);
+  try {
+    const opts = { model: MODEL }, p = PROMPT(text, $('lang').value);
+    const res = file ? await puter.ai.chat(p, file, false, opts) : await puter.ai.chat(p, false, opts);
+    const raw = extractText(res); let data, ok = true;
+    try { data = parseJSON(raw); } catch { ok = false; data = { summary: raw.replace(/```/g, ''), medicines: [] }; }
+    stop(); render(data);
+    if (ok && (data.medicines || []).length) addHistory(file ? 'photo' : 'typed', text || file.name, data);
+  } catch (err) {
+    stop();
+    const m = (err && (err.message || err.error?.message || err.error)) || 'Something went wrong.';
+    showError(String(m).replace(/puter(\.js)?/gi, 'MedLens') + ' Please try again.');
+  } finally { $('analyzeBtn').disabled = false; }
+});
+
+/* ---------- history ---------- */
+const TYPES = { photo: { label: 'Photo', icon: 'image', tile: 'bg-sky text-cobalt' }, typed: { label: 'Typed', icon: 'type', tile: 'bg-amber/15 text-amber' }, sample: { label: 'Sample', icon: 'file-text', tile: 'bg-emerald-50 text-mint' } };
+const dayLabel = ts => { const d = new Date(ts), s = x => x.toDateString();
+  return s(d) === s(new Date()) ? 'Today' : s(d) === s(new Date(Date.now() - 864e5)) ? 'Yesterday' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); };
+const count = t => history.filter(h => t === 'all' || h.type === t).length;
+function renderHistory() {
+  const n = history.length, m = history.reduce((a, h) => a + (h.data.medicines || []).length, 0);
+  $('histCount').textContent = n ? `${n} saved · ${m} medicines explained` : 'Nothing saved yet';
+  $('delAll').classList.toggle('hidden', !n);
+  $('chips').innerHTML = ['all', 'photo', 'typed', 'sample'].map(k => `<button data-f="${k}" class="shrink-0 rounded-full border px-4 py-2 font-semibold ${filter === k ? 'bg-ink border-ink text-white' : 'bg-white border-slate-200'}">${k === 'all' ? 'All' : TYPES[k].label} <span class="${filter === k ? 'text-white/60' : 'text-slate-400'}">${count(k)}</span></button>`).join('');
+  const items = history.filter(h => filter === 'all' || h.type === filter);
+  if (!items.length) { $('histList').innerHTML = `<div class="text-center text-slate-500 py-16"><i data-lucide="pill" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-3 font-semibold">Nothing here yet</p><p class="text-sm">Explained medicines will show up here.</p></div>`; icons(); return; }
+  let last = '', html = '';
+  items.forEach(h => {
+    const lbl = dayLabel(h.ts); if (lbl !== last) { html += `<p class="pt-3 pb-1 px-1 text-sm font-semibold text-slate-500">${esc(lbl)}</p>`; last = lbl; }
+    const names = (h.data.medicines || []).map(x => x.name.replace(/\s+(tablet|capsule)s?$/i, '')), t = TYPES[h.type];
+    html += `<div class="rounded-2xl bg-white border border-slate-200 p-3.5 flex items-center gap-3 cursor-pointer hover:border-cobalt" data-open="${h.id}" role="button" tabindex="0">
+      <span class="w-12 h-12 rounded-xl ${t.tile} flex items-center justify-center shrink-0"><i data-lucide="${t.icon}" class="w-6 h-6"></i></span>
+      <div class="flex-1 min-w-0"><p class="font-bold truncate">${esc(names.slice(0, 2).join(', ') || 'Explanation')}${names.length > 2 ? ` +${names.length - 2}` : ''}</p>
+      <p class="text-sm text-slate-500">${t.label} · ${names.length} medicine${names.length === 1 ? '' : 's'} · ${new Date(h.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p></div>
+      <button data-del="${h.id}" class="p-2.5 rounded-full text-coral hover:bg-red-50" aria-label="Delete"><i data-lucide="trash-2" class="w-5 h-5"></i></button></div>`;
+  });
+  $('histList').innerHTML = html; icons();
+}
+$('chips').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) { filter = b.dataset.f; renderHistory(); } });
+$('histList').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del) { history = history.filter(h => h.id !== +del.dataset.del); saveHistory(); renderHistory(); return; }
+  const open = e.target.closest('[data-open]');
+  if (open) { const h = history.find(x => x.id === +open.dataset.open); if (h) { setTab('scan'); render(h.data, { fromHistory: true, demo: h.type === 'sample' }); } }
+});
+$('delAll').addEventListener('click', () => { if (confirm('Delete all saved explanations?')) { history = []; saveHistory(); renderHistory(); } });
+
+/* ---------- tutorial ---------- */
+const tile = (ic, label) => `<div class="w-28 h-28 rounded-3xl bg-white text-cobalt flex flex-col items-center justify-center gap-2 shadow-xl shadow-ink/20"><i data-lucide="${ic}" class="w-9 h-9"></i><span class="font-bold text-ink">${label}</span></div>`;
+const STEPS = [
+  { art: `<div class="flex gap-4">${tile('keyboard', 'Type')}${tile('camera', 'Photo')}</div>`, title: 'Add your medicines', text: 'Type the names, or take a photo of a prescription or medicine strip. Use either one, or both.' },
+  { art: `<div class="w-36 h-36 rounded-full bg-white/20 flex items-center justify-center"><div class="w-24 h-24 rounded-full bg-white text-cobalt flex items-center justify-center shadow-xl shadow-ink/20"><i data-lucide="sparkles" class="w-11 h-11"></i></div></div>`, title: 'Tap Explain', text: 'MedLens reads everything and breaks each medicine down in simple words. You choose the language in Settings.' },
+  { art: `<div class="w-64 rounded-3xl bg-white p-4 shadow-xl shadow-ink/20 text-ink"><p class="font-display font-extrabold text-lg">Amoxicillin 500 mg</p><div class="mt-3 flex justify-around">${cells(['morning', 'night'])}</div></div>`, title: 'See it at a glance', text: 'Filled circles show when to take each dose. Warnings and side effects sit right below.' },
+  { art: `<div class="flex flex-col items-center gap-3">${tile('file-text', 'Sample')}<span class="rounded-full bg-white/20 text-white font-semibold px-4 py-1.5 text-sm">No sign-in needed</span></div>`, title: 'Try it right now', text: 'The sample prescription works instantly. You only sign in, free, when you analyze your own medicines.' }
+];
+let step = 0;
+function drawTour() {
+  const s = STEPS[step], last = step === STEPS.length - 1;
+  $('tourArt').innerHTML = s.art; $('tourTitle').textContent = s.title; $('tourText').textContent = s.text;
+  $('tourDots').innerHTML = STEPS.map((_, i) => `<i class="h-2 rounded-full ${i === step ? 'w-6 bg-cobalt' : 'w-2 bg-slate-300'}"></i>`).join('');
+  $('tourNext').textContent = last ? 'Try the sample prescription' : 'Next';
+  $('tourSkip').textContent = last ? 'Start on my own' : 'Skip';
+  $('tourBack').classList.toggle('invisible', step === 0);
+  icons();
+}
+function openTour() { step = 0; $('tour').classList.remove('hidden'); drawTour(); }
+function closeTour() { $('tour').classList.add('hidden'); store.set('medlens_seen', true); }
+$('tourNext').addEventListener('click', () => { if (step < STEPS.length - 1) { step++; drawTour(); } else { closeTour(); $('demoBtn').click(); } });
+$('tourBack').addEventListener('click', () => { if (step) { step--; drawTour(); } });
+$('tourSkip').addEventListener('click', closeTour);
+$('helpBtn').addEventListener('click', openTour);
+$('tourBtn').addEventListener('click', () => { setTab('scan'); openTour(); });
+
+updateAuthUI(); setTab('scan'); icons();
+if (!store.get('medlens_seen', false)) openTour();
+</script>
+</body>
+</html>
